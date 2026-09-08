@@ -1,0 +1,24 @@
+{
+  "name": "@RealEstateProject/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@RealEstateProject/db": "workspace:*",
+    "@RealEstateProject/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@RealEstateProject/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
