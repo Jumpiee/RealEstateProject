@@ -1,9 +1,125 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated"
+  provider     = "prisma-client"
+  output       = "../generated"
   moduleFormat = "esm"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model Agent {
+  id           String         @id @default(cuid())
+  username     String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AgentSession[]
+  owners       Owner[]
+  properties   Property[]
+  customers    Customer[]
+  appointments Appointment[]
+}
+
+model AgentSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  agentId   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+}
+
+model Owner {
+  id         String     @id @default(cuid())
+  agentId    String
+  name       String
+  phone      String
+  createdAt  DateTime   @default(now())
+  agent      Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  properties Property[]
+
+  @@unique([agentId, phone])
+  @@index([agentId])
+}
+
+model Property {
+  id          String                 @id @default(cuid())
+  agentId     String
+  ownerId     String
+  name        String
+  type        String
+  address     String
+  area        Float
+  price       Float
+  description String
+  status      String                 @default("ว่าง")
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  agent       Agent                  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  owner       Owner                  @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  postings    PropertyPosting[]
+  statusHistory PropertyStatusHistory[]
+  appointments Appointment[]
+
+  @@index([agentId])
+  @@index([ownerId])
+}
+
+model PropertyPosting {
+  id         String    @id @default(cuid())
+  propertyId String
+  website    String
+  status     String    @default("ยังไม่ลง")
+  postedAt   DateTime?
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, website])
+  @@index([propertyId])
+}
+
+model PropertyStatusHistory {
+  id         String   @id @default(cuid())
+  propertyId String
+  oldStatus  String
+  newStatus  String
+  changedAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  agentId      String
+  name         String
+  phone        String
+  requirements String
+  createdAt    DateTime      @default(now())
+  agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([agentId])
+}
+
+model Appointment {
+  id              String    @id @default(cuid())
+  agentId         String
+  customerId      String?
+  relevantPerson  String
+  propertyId      String?
+  type            String
+  startAt         DateTime
+  endAt           DateTime
+  details         String
+  status          String    @default("นัดแล้ว")
+  createdAt       DateTime  @default(now())
+  agent           Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([agentId, startAt])
+  @@index([agentId, endAt])
 }

@@ -194,6 +194,9 @@ importers:
       '@RealEstateProject/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@RealEstateProject/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@RealEstateProject/env':
         specifier: workspace:*
         version: link:../../packages/env

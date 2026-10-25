@@ -1,16 +1,12 @@
-"use client";
+﻿import { redirect } from "next/navigation";
 
-import { useState } from "react";
+import { getAgent } from "@/lib/agent-auth";
+import LoginForm from "./login-form";
 
-import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
+type SearchParams = Promise<{ registered?: string }>;
 
-export default function LoginPage() {
-  const [showSignIn, setShowSignIn] = useState(false);
-
-  return showSignIn ? (
-    <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-  ) : (
-    <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
-  );
+export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+  if (await getAgent()) redirect("/dashboard");
+  const query = await searchParams;
+  return <LoginForm registered={query.registered === "1"} />;
 }

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@RealEstateProject/auth": "workspace:*",
+    "@RealEstateProject/db": "workspace:*",
     "@RealEstateProject/env": "workspace:*",
     "@RealEstateProject/ui": "workspace:*",
     "@prisma/client": "catalog:",
