@@ -11,7 +11,7 @@
     "build": "turbo run build",
     "check-types": "turbo run check-types",
     "dev:web": "turbo run dev -F web --",
-    "db:push": "turbo run db:push -F @RealEstateProject/db --",
+    "db:push": "pnpm --filter @RealEstateProject/db db:push",
     "db:studio": "turbo run db:studio -F @RealEstateProject/db --",
     "db:generate": "turbo run db:generate -F @RealEstateProject/db --",
     "db:migrate": "turbo run db:migrate -F @RealEstateProject/db --",

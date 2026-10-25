@@ -1,119 +1,56 @@
-# RealEstateProject
+# ระบบจัดการอสังหาริมทรัพย์สำหรับนายหน้า
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Self, and more.
+Internal workspace for real estate agents. Agents can manage property records, external listing checklists, customers, and appointments. Owners and customers are records only; they do not have accounts.
 
 ## Features
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Prisma** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **Husky** - Git hooks for code quality
-- **Turborepo** - Optimized monorepo build system
+- Agent registration and login with username and password, salted password hashes, and persistent sessions.
+- Property records with owner details, property information, posting checklists for DDproperty, LivingInsider, and Facebook, and status history.
+- Property status filters for ทั้งหมด, ว่าง, กำลังดำเนินการ, and ขายแล้ว.
+- Customer contact and requirement records.
+- Appointment records with agent-specific overlap checks.
+- Thai interface with the main menus อสังหาริมทรัพย์, นัดหมาย, and ลูกค้า.
 
-## Getting Started
+## Getting started
 
-First, install the dependencies:
+Requirements: Node.js, pnpm, and PostgreSQL. To use the included database container, Docker Desktop must be running.
 
-```bash
-pnpm install
-```
+1. Install dependencies:
 
-## Database Setup
+   ```bash
+   pnpm install
+   ```
 
-This project uses PostgreSQL with Prisma.
+2. Create `apps/web/.env` and set the connection to your local PostgreSQL database. The shared runtime configuration also requires the two compatibility values shown below:
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/web/.env` file with your PostgreSQL connection details.
+   ```dotenv
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/RealEstateProject"
+   BETTER_AUTH_SECRET="replace-with-at-least-32-characters"
+   BETTER_AUTH_URL="http://localhost:3001"
+   ```
 
-3. Apply the schema to your database:
+   For the included Docker database, start PostgreSQL from the repository root with `docker compose up -d postgres`. Its default credentials match the connection string above. Set `POSTGRES_PASSWORD` in the root environment if you use a different password.
 
-```bash
-pnpm run db:push
-```
+3. Apply the Prisma schema:
 
-Then, run the development server:
+   ```bash
+   pnpm db:push
+   ```
 
-```bash
-pnpm run dev
-```
+4. Start the web app:
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the fullstack application.
+   ```bash
+   pnpm dev:web
+   ```
 
-## UI Customization
+   Open [http://localhost:3001](http://localhost:3001). The root page directs agents to the dashboard after login and other visitors to the login page. New agents can register from there.
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
+## Useful commands
 
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
+- `pnpm --filter web check-types` — check web TypeScript types.
+- `pnpm --filter web build` — build the web app.
+- `pnpm db:generate` — generate the Prisma client.
+- `pnpm db:studio` — open Prisma Studio.
+- `docker compose down` — stop the local services.
 
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components like this:
-
-```tsx
-import { Button } from "@RealEstateProject/ui/components/button";
-```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Deployment
-
-### Docker Compose
-
-- Target: web + server
-- Config: `docker-compose.yml` (app Dockerfiles live in `apps/*/Dockerfile`)
-- Build images: pnpm run docker:build
-- Start: pnpm run docker:up
-- Logs: pnpm run docker:logs
-- Stop: pnpm run docker:down
-
-Environment variables are read from each app's `.env` file (baked into web builds for public variables) and overridden in `docker-compose.yml` for container networking.
-
-For more details, see the guide on [Deploying with Docker Compose](https://www.better-t-stack.dev/docs/guides/docker).
-
-## Git Hooks and Formatting
-
-- Initialize hooks: `pnpm run prepare`
-- Run checks: `pnpm run check`
-
-## Project Structure
-
-```
-RealEstateProject/
-├── apps/
-│   └── web/         # Fullstack application (Next.js)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
-- `pnpm run check`: Run Biome formatting and linting
-- `pnpm run docker:build`: Build the Docker Compose images
-- `pnpm run docker:up`: Build and start the Docker Compose stack
-- `pnpm run docker:logs`: Tail logs from the Docker Compose stack
-- `pnpm run docker:down`: Stop the Docker Compose stack
+The Next.js app is in `apps/web`, the Prisma schema and client are in `packages/db`, and shared UI styles are in `packages/ui`.
