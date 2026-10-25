@@ -14,13 +14,31 @@ export default function RegisterForm() {
   const [confirmation, setConfirmation] = useState("");
   const missing = [!username.trim() && "ชื่อผู้ใช้", !password && "รหัสผ่าน", !confirmation && "ยืนยันรหัสผ่าน"].filter(Boolean);
   const message = state.error === "required"
-    ? `กรุณากรอกข้อมูลให้ครบ${missing.length ? `: ${missing.join(", ")}` : ""}`
+    ? "กรุณากรอกข้อมูลให้ครบ"
     : state.error === "short-password"
-      ? "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร (รหัสผ่าน)"
+      ? "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
       : state.error === "password-mismatch"
-        ? "รหัสผ่านไม่ตรงกัน (รหัสผ่าน, ยืนยันรหัสผ่าน)"
+        ? "รหัสผ่านไม่ตรงกัน"
         : state.error === "duplicate"
-          ? "ชื่อผู้ใช้นี้ถูกใช้แล้ว (ชื่อผู้ใช้)"
+          ? "ชื่อผู้ใช้นี้ถูกใช้แล้ว"
+          : null;
+  const correctionField = state.error === "required"
+    ? (!username.trim() ? "username" : !password ? "password" : "confirmPassword")
+    : state.error === "short-password"
+      ? "password"
+      : state.error === "password-mismatch"
+        ? "confirmPassword"
+        : state.error === "duplicate"
+          ? "username"
+          : "username";
+  const fieldHint = state.error === "required"
+    ? `ช่องที่ต้องแก้ไข: ${missing.join(", ")}`
+    : state.error === "short-password"
+      ? "ช่องที่ต้องแก้ไข: รหัสผ่าน"
+      : state.error === "password-mismatch"
+        ? "ช่องที่ต้องแก้ไข: ยืนยันรหัสผ่าน"
+        : state.error === "duplicate"
+          ? "ช่องที่ต้องแก้ไข: ชื่อผู้ใช้"
           : null;
 
   return (
@@ -29,7 +47,7 @@ export default function RegisterForm() {
         <p className="mb-2 text-sm font-medium text-primary">ระบบจัดการอสังหาริมทรัพย์สำหรับนายหน้า</p>
         <h1 className="text-3xl font-semibold tracking-tight">สมัครสมาชิก</h1>
         <p className="mt-2 text-sm text-muted-foreground">สร้างบัญชีสำหรับนายหน้าเพื่อเริ่มใช้งาน</p>
-        {message && <div role="alert" className="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"><p>{message}</p><a className="mt-2 inline-block font-medium underline" href="#register-form">กลับไปแก้ไข</a></div>}
+        {message && <div role="alert" className="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"><p>{message}</p>{fieldHint && <p className="mt-1">{fieldHint}</p>}<a className="mt-2 inline-block font-medium underline" href={`#${correctionField}`}>กลับไปแก้ไข</a></div>}
         <form id="register-form" action={formAction} className="mt-7 space-y-5">
           <div className="space-y-2">
             <label htmlFor="username" className="text-sm font-medium">ชื่อผู้ใช้</label>

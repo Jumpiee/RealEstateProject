@@ -21,6 +21,16 @@ export default function LoginForm({ registered }: { registered: boolean }) {
     : state.error === "invalid"
       ? "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
       : null;
+  const correctionField = state.error === "invalid"
+    ? "password"
+    : state.error === "required" && !username.trim()
+      ? "username"
+      : "password";
+  const fieldHint = state.error === "required"
+    ? `ช่องที่ต้องแก้ไข: ${[!username.trim() && "ชื่อผู้ใช้", !password && "รหัสผ่าน"].filter(Boolean).join(", ")}`
+    : state.error === "invalid"
+      ? "ช่องที่ต้องแก้ไข: รหัสผ่าน"
+      : null;
 
   return (
     <main className="mx-auto flex min-h-[calc(100svh-1px)] w-full max-w-lg items-center px-5 py-12">
@@ -29,7 +39,7 @@ export default function LoginForm({ registered }: { registered: boolean }) {
         <h1 className="text-3xl font-semibold tracking-tight">เข้าสู่ระบบ</h1>
         <p className="mt-2 text-sm text-muted-foreground">เข้าสู่ระบบด้วยบัญชีของนายหน้า</p>
         {registered && <p role="status" className="mt-5 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">สมัครสมาชิกสำเร็จ</p>}
-        {message && <div role="alert" className="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"><p>{message}</p><a className="mt-2 inline-block font-medium underline" href="#login-form">กลับไปแก้ไข</a></div>}
+        {message && <div role="alert" className="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"><p>{message}</p>{fieldHint && <p className="mt-1">{fieldHint}</p>}<a className="mt-2 inline-block font-medium underline" href={`#${correctionField}`}>กลับไปแก้ไข</a></div>}
         <form id="login-form" action={formAction} className="mt-7 space-y-5">
           <div className="space-y-2">
             <label htmlFor="username" className="text-sm font-medium">ชื่อผู้ใช้</label>
