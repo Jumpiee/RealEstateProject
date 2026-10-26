@@ -1,9 +1,13 @@
-import { createHash, randomBytes, scrypt as nodeScrypt, timingSafeEqual } from "node:crypto";
+import prisma from "@RealEstateProject/db";
+import {
+  createHash,
+  scrypt as nodeScrypt,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
-import prisma from "@RealEstateProject/db";
 
 const scrypt = promisify(nodeScrypt);
 const SESSION_COOKIE = "agent_session";
@@ -23,7 +27,13 @@ export async function hashPassword(password: string) {
 
 export async function verifyPassword(password: string, encoded: string) {
   const [algorithm, salt, storedHex] = encoded.split("$");
-  if (algorithm !== "scrypt" || !salt || !storedHex || !/^[a-f0-9]{128}$/i.test(storedHex)) return false;
+  if (
+    algorithm !== "scrypt" ||
+    !salt ||
+    !storedHex ||
+    !/^[a-f0-9]{128}$/i.test(storedHex)
+  )
+    return false;
   const actual = (await scrypt(password, salt, 64)) as Buffer;
   const expected = Buffer.from(storedHex, "hex");
   return actual.length === expected.length && timingSafeEqual(actual, expected);
@@ -32,7 +42,9 @@ export async function verifyPassword(password: string, encoded: string) {
 export async function createAgentSession(agentId: string) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-  await prisma.agentSession.create({ data: { agentId, tokenHash: hashSessionToken(token), expiresAt } });
+  await prisma.agentSession.create({
+    data: { agentId, tokenHash: hashSessionToken(token), expiresAt },
+  });
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -48,11 +60,16 @@ export async function getAgent(): Promise<AgentIdentity | null> {
   if (!token) return null;
   const session = await prisma.agentSession.findUnique({
     where: { tokenHash: hashSessionToken(token) },
-    select: { expiresAt: true, agent: { select: { id: true, username: true } } },
+    select: {
+      expiresAt: true,
+      agent: { select: { id: true, username: true } },
+    },
   });
   if (!session) return null;
   if (session.expiresAt <= new Date()) {
-    await prisma.agentSession.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
+    await prisma.agentSession.deleteMany({
+      where: { tokenHash: hashSessionToken(token) },
+    });
     return null;
   }
   return session.agent;
@@ -67,6 +84,9 @@ export async function requireAgent(): Promise<AgentIdentity> {
 export async function destroyAgentSession() {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
-  if (token) await prisma.agentSession.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
+  if (token)
+    await prisma.agentSession.deleteMany({
+      where: { tokenHash: hashSessionToken(token) },
+    });
   jar.delete(SESSION_COOKIE);
 }

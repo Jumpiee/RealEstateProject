@@ -3,68 +3,145 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
-import { registerAgent, type RegisterState } from "./actions";
+import { type RegisterState, registerAgent } from "./actions";
 
 const initialState: RegisterState = { error: null };
 
 export default function RegisterForm() {
-  const [state, formAction, pending] = useActionState(registerAgent, initialState);
+  const [state, formAction, pending] = useActionState(
+    registerAgent,
+    initialState,
+  );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
-  const missing = [!username.trim() && "ชื่อผู้ใช้", !password && "รหัสผ่าน", !confirmation && "ยืนยันรหัสผ่าน"].filter(Boolean);
-  const message = state.error === "required"
-    ? "กรุณากรอกข้อมูลให้ครบ"
-    : state.error === "short-password"
-      ? "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
-      : state.error === "password-mismatch"
-        ? "รหัสผ่านไม่ตรงกัน"
-        : state.error === "duplicate"
-          ? "ชื่อผู้ใช้นี้ถูกใช้แล้ว"
-          : null;
-  const correctionField = state.error === "required"
-    ? (!username.trim() ? "username" : !password ? "password" : "confirmPassword")
-    : state.error === "short-password"
-      ? "password"
-      : state.error === "password-mismatch"
-        ? "confirmPassword"
-        : state.error === "duplicate"
-          ? "username"
-          : "username";
-  const fieldHint = state.error === "required"
-    ? `ช่องที่ต้องแก้ไข: ${missing.join(", ")}`
-    : state.error === "short-password"
-      ? "ช่องที่ต้องแก้ไข: รหัสผ่าน"
-      : state.error === "password-mismatch"
-        ? "ช่องที่ต้องแก้ไข: ยืนยันรหัสผ่าน"
-        : state.error === "duplicate"
-          ? "ช่องที่ต้องแก้ไข: ชื่อผู้ใช้"
-          : null;
+  const missing = [
+    !username.trim() && "ชื่อผู้ใช้",
+    !password && "รหัสผ่าน",
+    !confirmation && "ยืนยันรหัสผ่าน",
+  ].filter(Boolean);
+  const message =
+    state.error === "required"
+      ? "กรุณากรอกข้อมูลให้ครบ"
+      : state.error === "short-password"
+        ? "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
+        : state.error === "password-mismatch"
+          ? "รหัสผ่านไม่ตรงกัน"
+          : state.error === "duplicate"
+            ? "ชื่อผู้ใช้นี้ถูกใช้แล้ว"
+            : null;
+  const correctionField =
+    state.error === "required"
+      ? !username.trim()
+        ? "username"
+        : !password
+          ? "password"
+          : "confirmPassword"
+      : state.error === "short-password"
+        ? "password"
+        : state.error === "password-mismatch"
+          ? "confirmPassword"
+          : state.error === "duplicate"
+            ? "username"
+            : "username";
+  const fieldHint =
+    state.error === "required"
+      ? `ช่องที่ต้องแก้ไข: ${missing.join(", ")}`
+      : state.error === "short-password"
+        ? "ช่องที่ต้องแก้ไข: รหัสผ่าน"
+        : state.error === "password-mismatch"
+          ? "ช่องที่ต้องแก้ไข: ยืนยันรหัสผ่าน"
+          : state.error === "duplicate"
+            ? "ช่องที่ต้องแก้ไข: ชื่อผู้ใช้"
+            : null;
 
   return (
     <main className="mx-auto flex min-h-[calc(100svh-1px)] w-full max-w-lg items-center px-5 py-12">
       <section className="w-full rounded-2xl border bg-card p-7 shadow-sm sm:p-9">
-        <p className="mb-2 text-sm font-medium text-primary">ระบบจัดการอสังหาริมทรัพย์สำหรับนายหน้า</p>
-        <h1 className="text-3xl font-semibold tracking-tight">สมัครสมาชิก</h1>
-        <p className="mt-2 text-sm text-muted-foreground">สร้างบัญชีสำหรับนายหน้าเพื่อเริ่มใช้งาน</p>
-        {message && <div role="alert" className="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"><p>{message}</p>{fieldHint && <p className="mt-1">{fieldHint}</p>}<a className="mt-2 inline-block font-medium underline" href={`#${correctionField}`}>กลับไปแก้ไข</a></div>}
+        <p className="mb-2 font-medium text-primary text-sm">
+          ระบบจัดการอสังหาริมทรัพย์สำหรับนายหน้า
+        </p>
+        <h1 className="font-semibold text-3xl tracking-tight">สมัครสมาชิก</h1>
+        <p className="mt-2 text-muted-foreground text-sm">
+          สร้างบัญชีสำหรับนายหน้าเพื่อเริ่มใช้งาน
+        </p>
+        {message && (
+          <div
+            role="alert"
+            className="mt-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"
+          >
+            <p>{message}</p>
+            {fieldHint && <p className="mt-1">{fieldHint}</p>}
+            <a
+              className="mt-2 inline-block font-medium underline"
+              href={`#${correctionField}`}
+            >
+              กลับไปแก้ไข
+            </a>
+          </div>
+        )}
         <form id="register-form" action={formAction} className="mt-7 space-y-5">
           <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">ชื่อผู้ใช้</label>
-            <input id="username" name="username" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} className="w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/40" />
+            <label htmlFor="username" className="font-medium text-sm">
+              ชื่อผู้ใช้
+            </label>
+            <input
+              id="username"
+              name="username"
+              autoComplete="username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className="w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/40"
+            />
           </div>
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">รหัสผ่าน</label>
-            <input id="password" name="password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/40" />
-            <p className="text-xs text-muted-foreground">รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร</p>
+            <label htmlFor="password" className="font-medium text-sm">
+              รหัสผ่าน
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <p className="text-muted-foreground text-xs">
+              รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร
+            </p>
           </div>
           <div className="space-y-2">
-            <label htmlFor="confirmPassword" className="text-sm font-medium">ยืนยันรหัสผ่าน</label>
-            <input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/40" />
+            <label htmlFor="confirmPassword" className="font-medium text-sm">
+              ยืนยันรหัสผ่าน
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+              className="w-full rounded-lg border bg-background px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/40"
+            />
           </div>
-          <button disabled={pending} className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60">{pending ? "กำลังสมัครสมาชิก…" : "สมัครสมาชิก"}</button>
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {pending ? "กำลังสมัครสมาชิก…" : "สมัครสมาชิก"}
+          </button>
         </form>
-        <p className="mt-6 text-center text-sm text-muted-foreground">มีบัญชีแล้ว? <Link href="/login" className="font-medium text-foreground underline underline-offset-4">เข้าสู่ระบบ</Link></p>
+        <p className="mt-6 text-center text-muted-foreground text-sm">
+          มีบัญชีแล้ว?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            เข้าสู่ระบบ
+          </Link>
+        </p>
       </section>
     </main>
   );

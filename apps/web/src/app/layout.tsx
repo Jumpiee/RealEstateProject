@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 import "../index.css";
-import Providers from "@/components/providers";
 import Header from "@/components/header";
+import Providers from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "ระบบจัดการอสังหาริมทรัพย์สำหรับนายหน้า",

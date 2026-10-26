@@ -1,5 +1,5 @@
-import { PrismaPg } from "@prisma/adapter-pg";
 import { env } from "@RealEstateProject/env/server";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../prisma/generated/client";
 
