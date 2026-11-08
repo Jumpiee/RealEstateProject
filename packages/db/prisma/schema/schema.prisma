@@ -8,7 +8,9 @@ datasource db {
   provider = "postgresql"
 }
 
-model Agent {
+// Prisma uses the ER model's entity names while @@map/@map keep the
+// established database tables and columns intact for existing data.
+model User {
   id           String         @id @default(cuid())
   username     String         @unique
   passwordHash String
@@ -17,109 +19,145 @@ model Agent {
   sessions     AgentSession[]
   owners       Owner[]
   properties   Property[]
-  customers    Customer[]
+  buyers       Buyer[]
   appointments Appointment[]
+  statusChanges PropertyStatusHistory[]
+
+  @@map("Agent")
 }
 
+// Session storage remains infrastructure with its historical physical name
+// and agentId column; agents are the User records above.
 model AgentSession {
   id        String   @id @default(cuid())
   tokenHash String   @unique
   agentId   String
   expiresAt DateTime
   createdAt DateTime @default(now())
-  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@index([agentId])
 }
 
 model Owner {
   id         String     @id @default(cuid())
-  agentId    String
+  userId     String     @map("agentId")
   name       String
   phone      String
   createdAt  DateTime   @default(now())
-  agent      Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Restrict)
   properties Property[]
+  appointments Appointment[]
 
-  @@unique([agentId, phone])
-  @@index([agentId])
+  @@unique([userId, phone])
+  @@index([userId])
 }
 
 model Property {
-  id          String                 @id @default(cuid())
-  agentId     String
-  ownerId     String
-  name        String
-  type        String
-  address     String
-  area        Float
-  price       Float
-  description String
-  status      String                 @default("ว่าง")
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-  agent       Agent                  @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  owner       Owner                  @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  postings    PropertyPosting[]
-  statusHistory PropertyStatusHistory[]
-  appointments Appointment[]
+  id             String                 @id @default(cuid())
+  userId         String                 @map("agentId")
+  ownerId        String
+  name           String
+  type           String
+  address        String
+  area           Float
+  price          Float
+  description    String
+  status         String                 @default("ว่าง")
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  owner          Owner                  @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  publicationChecks PublicationCheck[]
+  tasks          PropertyTask[]
+  statusHistory  PropertyStatusHistory[]
+  appointments   Appointment[]
 
-  @@index([agentId])
+  @@index([userId])
   @@index([ownerId])
 }
 
-model PropertyPosting {
-  id         String    @id @default(cuid())
-  propertyId String
-  website    String
-  status     String    @default("ยังไม่ลง")
-  postedAt   DateTime?
-  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+model PublicationCheck {
+  id          String   @id @default(cuid())
+  propertyId  String
+  websiteName String   @map("website")
+  isPublished Boolean
+  publishedAt DateTime?
+  // Kept mapped for legacy data and rollback compatibility. Keep these in
+  // sync when writing publication state until the legacy columns are retired.
+  legacyStatus   String   @default("ยังไม่ลง") @map("status")
+  legacyPostedAt DateTime? @map("postedAt")
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  @@unique([propertyId, website])
+  @@unique([propertyId, websiteName])
   @@index([propertyId])
+  @@map("PropertyPosting")
+}
+
+model PropertyTask {
+  id          String   @id @default(cuid())
+  propertyId  String
+  stepName    String
+  stepOrder   Int
+  status      String
+  completedAt DateTime?
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, stepOrder])
 }
 
 model PropertyStatusHistory {
   id         String   @id @default(cuid())
   propertyId String
+  changedBy  String
   oldStatus  String
   newStatus  String
   changedAt  DateTime @default(now())
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [changedBy], references: [id], onDelete: Restrict)
 
   @@index([propertyId])
+  @@index([changedBy])
 }
 
-model Customer {
+model Buyer {
   id           String        @id @default(cuid())
-  agentId      String
+  userId       String        @map("agentId")
   name         String
   phone        String
   requirements String
+  budget       Decimal?      @db.Decimal(18, 2)
+  income       Decimal?      @db.Decimal(18, 2)
   createdAt    DateTime      @default(now())
-  agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   appointments Appointment[]
 
-  @@index([agentId])
+  @@index([userId])
+  @@map("Customer")
 }
 
 model Appointment {
   id              String    @id @default(cuid())
-  agentId         String
-  customerId      String?
-  relevantPerson  String
+  userId          String    @map("agentId")
+  ownerId         String?
+  buyerId         String?   @map("customerId")
+  // Keep existing free-text participant labels; new records omit this legacy field.
+  relevantPerson  String?
   propertyId      String?
-  type            String
+  appointmentType String    @map("type")
   startAt         DateTime
   endAt           DateTime
   details         String
   status          String    @default("นัดแล้ว")
   createdAt       DateTime  @default(now())
-  agent           Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  owner           Owner?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  buyer           Buyer?    @relation(fields: [buyerId], references: [id], onDelete: SetNull)
   property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
-  @@index([agentId, startAt])
-  @@index([agentId, endAt])
+  @@index([userId, startAt])
+  @@index([userId, endAt])
+  @@index([ownerId])
+  @@index([buyerId])
+  @@index([propertyId])
 }
