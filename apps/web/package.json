@@ -2,6 +2,9 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
@@ -10,6 +13,7 @@
   },
   "dependencies": {
     "@RealEstateProject/auth": "workspace:*",
+    "@RealEstateProject/db": "workspace:*",
     "@RealEstateProject/env": "workspace:*",
     "@RealEstateProject/ui": "workspace:*",
     "@prisma/client": "catalog:",

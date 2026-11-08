@@ -1,119 +1,84 @@
-# RealEstateProject
+# ระบบจัดการอสังหาริมทรัพย์สำหรับนายหน้า
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Self, and more.
+Internal workspace for real estate agents. Agents can manage property records, external listing checklists, customers, and appointments. Owners and customers are records only; they do not have accounts.
 
 ## Features
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Prisma** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **Husky** - Git hooks for code quality
-- **Turborepo** - Optimized monorepo build system
+- Agent registration and login with username and password, salted password hashes, and persistent sessions.
+- Property records with owner details, property information, posting checklists for DDproperty, LivingInsider, and Facebook, and status history.
+- Property status filters for ทั้งหมด, ว่าง, กำลังดำเนินการ, and ขายแล้ว.
+- Customer contact and requirement records.
+- Appointment records with agent-specific overlap checks.
+- Thai interface with the main menus อสังหาริมทรัพย์, นัดหมาย, and ลูกค้า.
 
-## Getting Started
+## Getting started
 
-First, install the dependencies:
+Requirements: Node.js, pnpm, and PostgreSQL (local or Neon). To use the included database container, Docker Desktop must be running.
 
-```bash
-pnpm install
-```
+1. Install dependencies:
 
-## Database Setup
+   ```bash
+   pnpm install
+   ```
 
-This project uses PostgreSQL with Prisma.
+2. Create `apps/web/.env` and set the database connection. For Neon, copy both connection strings from the Neon dashboard: use the pooled host (with `-pooler`) for `DATABASE_URL` and the direct host for `DIRECT_URL`. Keep this file out of Git. The shared runtime configuration also requires the two compatibility values shown below:
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/web/.env` file with your PostgreSQL connection details.
+   ```dotenv
+   DATABASE_URL="postgresql://USER:PASSWORD@EP-POOLER.REGION.aws.neon.tech:5432/DB?sslmode=require"
+   DIRECT_URL="postgresql://USER:PASSWORD@EP.REGION.aws.neon.tech:5432/DB?sslmode=require"
+   BETTER_AUTH_SECRET="replace-with-at-least-32-characters"
+   BETTER_AUTH_URL="http://localhost:3001"
+   ```
 
-3. Apply the schema to your database:
+   For the included Docker database, use `DATABASE_URL="postgresql://postgres:password@localhost:5432/RealEstateProject"` and omit `DIRECT_URL`. Start PostgreSQL from the repository root with `docker compose up -d postgres`. Set `POSTGRES_PASSWORD` in the root environment if you use a different password.
 
-```bash
-pnpm run db:push
-```
+3. Apply the database migrations. Prisma CLI uses `DIRECT_URL` when set, so verify that it points to the intended Neon branch before running this command. On a fresh database:
 
-Then, run the development server:
+   ```bash
+   pnpm --filter @RealEstateProject/db db:migrate:deploy
+   ```
 
-```bash
-pnpm run dev
-```
+   If this database was previously created with `pnpm db:push` and has the
+   existing `Agent`, `Customer`, and `PropertyPosting` tables but no Prisma
+   migration history, mark the matching baseline as applied once, then deploy:
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the fullstack application.
+   ```bash
+   pnpm --filter @RealEstateProject/db exec prisma migrate resolve --applied 0000_init
+   pnpm --filter @RealEstateProject/db db:migrate:deploy
+   ```
 
-## UI Customization
+   The alignment migration keeps existing tables and rows, backfills the
+   publication check and status history fields, and adds the new relations.
+   Back up an existing database before applying it. Use
+   `pnpm --filter @RealEstateProject/db db:generate` after pulling schema
+   changes without reinstalling dependencies.
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
+   The document's 31 SQL queries are adapted to the existing physical table
+   and column names in `packages/db/query-table.sql`. To execute every query
+   against a database without retaining test rows, set `QUERY_TEST_DATABASE_URL`
+   to its connection URL and run:
 
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
+   ```bash
+   pnpm --filter @RealEstateProject/db db:verify-queries
+   ```
 
-### Add more shared components
+   The verifier wraps all writes in a transaction and rolls it back. Use a
+   direct Neon connection URL for this check; the URL is never committed.
 
-Run this from the project root to add more primitives to the shared UI package:
+4. Start the web app:
 
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
+   ```bash
+   pnpm --filter web dev
+   ```
 
-Import shared components like this:
+   Open [http://localhost:3001](http://localhost:3001). The root page directs agents to the dashboard after login and other visitors to the login page. New agents can register from there.
 
-```tsx
-import { Button } from "@RealEstateProject/ui/components/button";
-```
+## Useful commands
 
-### Add app-specific blocks
+- `pnpm --filter web check-types` — check web TypeScript types.
+- `pnpm --filter web build` — build the web app.
+- `pnpm db:generate` — generate the Prisma client.
+- `pnpm db:studio` — open Prisma Studio.
+- `docker compose down` — stop the local services.
 
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Deployment
-
-### Docker Compose
-
-- Target: web + server
-- Config: `docker-compose.yml` (app Dockerfiles live in `apps/*/Dockerfile`)
-- Build images: pnpm run docker:build
-- Start: pnpm run docker:up
-- Logs: pnpm run docker:logs
-- Stop: pnpm run docker:down
-
-Environment variables are read from each app's `.env` file (baked into web builds for public variables) and overridden in `docker-compose.yml` for container networking.
-
-For more details, see the guide on [Deploying with Docker Compose](https://www.better-t-stack.dev/docs/guides/docker).
-
-## Git Hooks and Formatting
-
-- Initialize hooks: `pnpm run prepare`
-- Run checks: `pnpm run check`
-
-## Project Structure
-
-```
-RealEstateProject/
-├── apps/
-│   └── web/         # Fullstack application (Next.js)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
-- `pnpm run check`: Run Biome formatting and linting
-- `pnpm run docker:build`: Build the Docker Compose images
-- `pnpm run docker:up`: Build and start the Docker Compose stack
-- `pnpm run docker:logs`: Tail logs from the Docker Compose stack
-- `pnpm run docker:down`: Stop the Docker Compose stack
+The Next.js app is in `apps/web`, the Prisma schema and client are in `packages/db`, and shared UI styles are in `packages/ui`.

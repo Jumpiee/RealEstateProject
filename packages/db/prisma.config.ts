@@ -13,6 +13,8 @@ export default defineConfig({
     path: path.join("prisma", "migrations"),
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // Prisma CLI migrations use Neon's direct connection; local PostgreSQL
+    // setups can continue to use DATABASE_URL alone.
+    url: process.env.DIRECT_URL || env("DATABASE_URL"),
   },
 });

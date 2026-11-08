@@ -26,12 +26,21 @@
       "!**/.svelte-kit",
       "!**/wrangler.jsonc",
       "!**/.source",
-      "!**/convex/_generated"
+      "!**/convex/_generated",
+      "!apps/web/public/estate-hub",
+      "!upload",
+      "!packages/db/prisma/generated"
     ]
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "tab"
+    "indentStyle": "space",
+    "lineEnding": "crlf"
+  },
+  "json": {
+    "formatter": {
+      "indentStyle": "space"
+    }
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
