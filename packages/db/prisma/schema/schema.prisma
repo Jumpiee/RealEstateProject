@@ -8,156 +8,138 @@ datasource db {
   provider = "postgresql"
 }
 
-// Prisma uses the ER model's entity names while @@map/@map keep the
-// established database tables and columns intact for existing data.
 model User {
-  id           String         @id @default(cuid())
-  username     String         @unique
-  passwordHash String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  sessions     AgentSession[]
+  userId       BigInt        @id @default(autoincrement()) @map("user_id")
+  username     String        @unique @db.VarChar(50)
+  passwordHash String        @map("password_hash") @db.VarChar(255)
   owners       Owner[]
   properties   Property[]
-  buyers       Buyer[]
+  buyers        Buyer[]
   appointments Appointment[]
-  statusChanges PropertyStatusHistory[]
+  statusChanges StatusHistory[]
 
-  @@map("Agent")
-}
-
-// Session storage remains infrastructure with its historical physical name
-// and agentId column; agents are the User records above.
-model AgentSession {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  agentId   String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
-
-  @@index([agentId])
+  @@map("user")
 }
 
 model Owner {
-  id         String     @id @default(cuid())
-  userId     String     @map("agentId")
-  name       String
-  phone      String
-  createdAt  DateTime   @default(now())
-  user       User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  ownerId    BigInt     @id @default(autoincrement()) @map("owner_id")
+  userId     BigInt     @map("user_id")
+  name       String     @db.VarChar(150)
+  phone      String     @db.VarChar(10)
+  user       User       @relation(fields: [userId], references: [userId], onDelete: Restrict)
   properties Property[]
   appointments Appointment[]
 
-  @@unique([userId, phone])
+  @@unique([ownerId, userId])
   @@index([userId])
+  @@map("owner")
 }
 
 model Property {
-  id             String                 @id @default(cuid())
-  userId         String                 @map("agentId")
-  ownerId        String
-  name           String
-  type           String
-  address        String
-  area           Float
-  price          Float
-  description    String
-  status         String                 @default("ว่าง")
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  user           User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  owner          Owner                  @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  propertyId       BigInt              @id @default(autoincrement()) @map("property_id")
+  userId           BigInt              @map("user_id")
+  ownerId          BigInt              @map("owner_id")
+  name             String              @db.VarChar(150)
+  type             String              @db.VarChar(50)
+  address          String              @db.Text
+  area             Decimal             @db.Decimal(12, 2)
+  price            Decimal             @db.Decimal(14, 2)
+  status           String              @default("available") @db.VarChar(20)
+  description      String?             @db.Text
+  user             User                @relation(fields: [userId], references: [userId], onDelete: Restrict)
+  owner            Owner               @relation(fields: [ownerId, userId], references: [ownerId, userId], onDelete: Restrict)
   publicationChecks PublicationCheck[]
-  tasks          PropertyTask[]
-  statusHistory  PropertyStatusHistory[]
-  appointments   Appointment[]
+  tasks            PropertyTask[]
+  statusHistory    StatusHistory[]
+  statusHistoryForAgent StatusHistory[] @relation("HistoryResponsibleAgent")
+  appointments     Appointment[]       @relation("AppointmentProperty")
+  ownedAppointments Appointment[]      @relation("AppointmentPropertyOwner")
 
+  @@unique([propertyId, userId])
+  @@unique([propertyId, ownerId, userId])
   @@index([userId])
-  @@index([ownerId])
-}
-
-model PublicationCheck {
-  id          String   @id @default(cuid())
-  propertyId  String
-  websiteName String   @map("website")
-  isPublished Boolean
-  publishedAt DateTime?
-  // Kept mapped for legacy data and rollback compatibility. Keep these in
-  // sync when writing publication state until the legacy columns are retired.
-  legacyStatus   String   @default("ยังไม่ลง") @map("status")
-  legacyPostedAt DateTime? @map("postedAt")
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  @@unique([propertyId, websiteName])
-  @@index([propertyId])
-  @@map("PropertyPosting")
-}
-
-model PropertyTask {
-  id          String   @id @default(cuid())
-  propertyId  String
-  stepName    String
-  stepOrder   Int
-  status      String
-  completedAt DateTime?
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  @@index([propertyId, stepOrder])
-}
-
-model PropertyStatusHistory {
-  id         String   @id @default(cuid())
-  propertyId String
-  changedBy  String
-  oldStatus  String
-  newStatus  String
-  changedAt  DateTime @default(now())
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [changedBy], references: [id], onDelete: Restrict)
-
-  @@index([propertyId])
-  @@index([changedBy])
+  @@index([ownerId, userId])
+  @@map("property")
 }
 
 model Buyer {
-  id           String        @id @default(cuid())
-  userId       String        @map("agentId")
-  name         String
-  phone        String
-  requirements String
-  budget       Decimal?      @db.Decimal(18, 2)
-  income       Decimal?      @db.Decimal(18, 2)
-  createdAt    DateTime      @default(now())
-  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  buyerId      BigInt        @id @default(autoincrement()) @map("buyer_id")
+  userId       BigInt        @map("user_id")
+  name         String        @db.VarChar(150)
+  phone        String        @db.VarChar(10)
+  requirements String?       @db.Text
+  budget       Decimal?      @db.Decimal(14, 2)
+  income       Decimal?      @db.Decimal(12, 2)
+  user         User          @relation(fields: [userId], references: [userId], onDelete: Restrict)
   appointments Appointment[]
 
+  @@unique([buyerId, userId])
   @@index([userId])
-  @@map("Customer")
+  @@map("buyer")
 }
 
 model Appointment {
-  id              String    @id @default(cuid())
-  userId          String    @map("agentId")
-  ownerId         String?
-  buyerId         String?   @map("customerId")
-  // Keep existing free-text participant labels; new records omit this legacy field.
-  relevantPerson  String?
-  propertyId      String?
-  appointmentType String    @map("type")
-  startAt         DateTime
-  endAt           DateTime
-  details         String
-  status          String    @default("นัดแล้ว")
-  createdAt       DateTime  @default(now())
-  user            User      @relation(fields: [userId], references: [id], onDelete: Restrict)
-  owner           Owner?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  buyer           Buyer?    @relation(fields: [buyerId], references: [id], onDelete: SetNull)
-  property        Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  appointmentId BigInt    @id @default(autoincrement()) @map("appointment_id")
+  userId        BigInt    @map("user_id")
+  ownerId       BigInt?   @map("owner_id")
+  buyerId       BigInt    @map("buyer_id")
+  propertyId    BigInt    @map("property_id")
+  appointmentType String  @map("appointment_type") @db.VarChar(20)
+  appointmentAt DateTime @map("appointment_at") @db.Timestamptz(6)
+  endAt         DateTime  @map("end_at") @db.Timestamptz(6)
+  status        String    @default("scheduled") @db.VarChar(20)
+  details       String?   @db.Text
+  user          User      @relation(fields: [userId], references: [userId], onDelete: Restrict)
+  buyer         Buyer     @relation(fields: [buyerId, userId], references: [buyerId, userId], onDelete: Restrict)
+  property      Property  @relation("AppointmentProperty", fields: [propertyId, userId], references: [propertyId, userId], onDelete: Restrict)
+  propertyOwner Property? @relation("AppointmentPropertyOwner", fields: [propertyId, ownerId, userId], references: [propertyId, ownerId, userId], onDelete: Restrict)
+  owner         Owner?    @relation(fields: [ownerId, userId], references: [ownerId, userId], onDelete: Restrict)
 
-  @@index([userId, startAt])
+  @@index([userId, appointmentAt])
   @@index([userId, endAt])
-  @@index([ownerId])
-  @@index([buyerId])
+  @@index([buyerId, userId])
+  @@index([propertyId, userId])
+  @@index([ownerId, userId])
+  @@map("appointment")
+}
+
+model PropertyTask {
+  taskId     BigInt   @id @default(autoincrement()) @map("task_id")
+  propertyId BigInt   @map("property_id")
+  stepName   String   @map("step_name") @db.VarChar(100)
+  stepOrder  Int      @map("step_order")
+  property   Property @relation(fields: [propertyId], references: [propertyId], onDelete: Restrict)
+
+  @@unique([propertyId, stepOrder])
   @@index([propertyId])
+  @@map("property_task")
+}
+
+model PublicationCheck {
+  publicationCheckId BigInt    @id @default(autoincrement()) @map("publication_check_id")
+  propertyId         BigInt    @map("property_id")
+  websiteName        String    @map("website_name") @db.VarChar(100)
+  isPublished        Boolean   @default(false) @map("is_published")
+  publishedAt       DateTime? @map("published_at") @db.Timestamptz(6)
+  property           Property  @relation(fields: [propertyId], references: [propertyId], onDelete: Restrict)
+
+  @@unique([propertyId, websiteName])
+  @@index([propertyId])
+  @@map("publication_check")
+}
+
+model StatusHistory {
+  historyId  BigInt   @id @default(autoincrement()) @map("history_id")
+  propertyId BigInt   @map("property_id")
+  changedBy  BigInt   @map("changed_by")
+  oldStatus  String   @map("old_status") @db.VarChar(20)
+  newStatus  String   @map("new_status") @db.VarChar(20)
+  changedAt  DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+  property   Property @relation(fields: [propertyId], references: [propertyId], onDelete: Restrict)
+  responsibleProperty Property @relation("HistoryResponsibleAgent", fields: [propertyId, changedBy], references: [propertyId, userId], onDelete: Restrict)
+  user       User     @relation(fields: [changedBy], references: [userId], onDelete: Restrict)
+
+  @@index([propertyId])
+  @@index([changedBy])
+  @@map("property_status_history")
 }

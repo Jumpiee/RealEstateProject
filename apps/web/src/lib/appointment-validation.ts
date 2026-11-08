@@ -6,7 +6,6 @@ export const APPOINTMENT_TYPES = [
 
 export type AppointmentInput = {
   type: string;
-  relevantPerson: string;
   customerId?: string;
   propertyId?: string;
   startAt: string;
@@ -61,8 +60,6 @@ export function validateAppointment(input: AppointmentInput, now = new Date()) {
     )
   )
     errors.type = "กรุณาเลือกประเภทนัดหมาย";
-  if (!input.relevantPerson.trim())
-    errors.relevantPerson = "กรุณากรอกชื่อผู้เกี่ยวข้อง";
   if (!input.details?.trim()) errors.details = "กรุณากรอกรายละเอียดนัดหมาย";
   if (
     (input.type === "ดูอสังหา" || input.type === "ไปกรมที่ดิน") &&

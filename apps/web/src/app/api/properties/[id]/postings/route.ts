@@ -1,49 +1,23 @@
-import prisma from "@RealEstateProject/db";
 import { NextResponse } from "next/server";
 import { requireAgent } from "@/lib/agent-auth";
+import { getPropertyDetail } from "@/lib/data-service";
+import { runUseCaseQuery } from "@RealEstateProject/db";
 
 const websites = ["DDproperty", "LivingInsider", "Facebook"];
-
-// UC4 Q4.2/Q4.3: read checklist or mark the agent's successful manual post with its date.
-export async function GET(
-  _request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
-  const agent = await requireAgent();
-  const { id } = await context.params;
-  const property = await prisma.property.findFirst({
-    where: { id, agentId: agent.id },
-    include: { postings: true },
-  });
-  if (!property)
-    return NextResponse.json({ error: "ไม่พบข้อมูลอสังหา" }, { status: 404 });
-  return NextResponse.json({ property, websites });
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const agent = await requireAgent(); const { id } = await context.params;
+  const detail = /^\d+$/.test(id) ? await getPropertyDetail(agent.userId, id) : null;
+  return detail ? NextResponse.json({ ...detail, websites }) : NextResponse.json({ error: "ไม่พบข้อมูลอสังหา" }, { status: 404 });
 }
-
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
-  const agent = await requireAgent();
-  const { id } = await context.params;
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const agent = await requireAgent(); const { id } = await context.params;
   const body = await request.json().catch(() => null);
-  if (!body || !websites.includes(body.website))
-    return NextResponse.json({ error: "กรุณาเลือกเว็บไซต์" }, { status: 400 });
-  const property = await prisma.property.findFirst({
-    where: { id, agentId: agent.id },
-    select: { id: true },
-  });
-  if (!property)
-    return NextResponse.json({ error: "ไม่พบข้อมูลอสังหา" }, { status: 404 });
-  const posting = await prisma.propertyPosting.upsert({
-    where: { propertyId_website: { propertyId: id, website: body.website } },
-    create: {
-      propertyId: id,
-      website: body.website,
-      status: "ลงแล้ว",
-      postedAt: new Date(),
-    },
-    update: { status: "ลงแล้ว", postedAt: new Date() },
-  });
-  return NextResponse.json({ message: "บันทึกเว็บไซต์ที่ลงประกาศแล้ว", posting });
+  const checkId = String(body?.publicationCheckId ?? "");
+  const publishedAt = body?.publishedAt ? new Date(body.publishedAt) : null;
+  if (!/^\d+$/.test(id) || !/^\d+$/.test(checkId) || !body || typeof body.isPublished !== "boolean" || (body.isPublished && (!publishedAt || Number.isNaN(publishedAt.getTime()))) || (!body.isPublished && publishedAt)) {
+    return NextResponse.json({ error: "กรุณาตรวจสอบข้อมูลการประกาศ" }, { status: 400 });
+  }
+  const rows = await runUseCaseQuery<{ publication_check_id: bigint }>("Q4.3", [body.isPublished, publishedAt, BigInt(checkId), BigInt(id), BigInt(agent.userId)]);
+  if (rows.length !== 1) return NextResponse.json({ error: "ไม่พบรายการประกาศที่เลือก" }, { status: 404 });
+  return NextResponse.json({ message: "บันทึกเว็บไซต์ที่ลงประกาศแล้ว", publicationCheckId: String(rows[0].publication_check_id), isPublished: body.isPublished, publishedAt: publishedAt?.toISOString() ?? null });
 }

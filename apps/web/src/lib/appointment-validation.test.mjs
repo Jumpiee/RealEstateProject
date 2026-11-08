@@ -7,7 +7,6 @@ import {
 
 const input = {
   type: "ดูอสังหา",
-  relevantPerson: "คุณเอ",
   propertyId: "property-a",
   details: "พาชมบ้าน",
   startAt: "2030-01-02T10:00",
@@ -36,13 +35,10 @@ test("rejects an end time that is not after the start", () => {
   assert.equal(result.errors.endAt, "เวลาสิ้นสุดต้องหลังเวลาเริ่ม");
 });
 
-test("rejects missing appointment type or relevant person", () => {
-  const result = validateAppointment(
-    { ...input, type: "", relevantPerson: " " },
-    now,
-  );
-  assert.equal(result.errors.type, "กรุณาเลือกประเภทนัดหมาย");
-  assert.equal(result.errors.relevantPerson, "กรุณากรอกชื่อผู้เกี่ยวข้อง");
+test("rejects a missing appointment type without requiring a relevant person", () => {
+  assert.equal(validateAppointment(input, now).valid, true);
+  const result = validateAppointment({ ...input, type: "" }, now);
+  assert.ok(result.errors.type);
 });
 
 test("requires a property for viewing and land department appointments, but not for intake", () => {
